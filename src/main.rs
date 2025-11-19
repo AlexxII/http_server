@@ -1,3 +1,6 @@
-fn main() {
-    println!("Hello, world!");
+mod http;
+
+#[tokio::main]
+async fn main() {
+    http::server::start_http_server().await;
 }
