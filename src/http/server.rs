@@ -15,27 +15,22 @@ pub async fn start_http_server() -> io::Result<()> {
 }
 
 async fn socket_task(mut socket: TcpStream) {
-    let mut buffer = [0u8; 1024];
+    let mut lines = BufReader::new(socket).lines();
+    let mut lines_pool: Vec<String> = vec![];
 
-    let n = match socket.read(&mut buffer).await {
-        Ok(0) => return,
-        Ok(n) => n,
-        Err(_) => return,
-    };
+    while let Ok(Some(line)) = lines.next_line().await {
+        lines_pool.push(line);
+    }
 
-    let request = String::from_utf8_lossy(&buffer);
-    // println!("{request}");
-
-    let mut lines = request.lines();
-    let first_line = lines.next().unwrap_or("");
+    let first_line = lines_pool.into_iter().next().unwrap_or("".to_string());
     let parts: Vec<&str> = first_line.split_whitespace().collect();
     let (method, path) = if parts.len() >= 2 {
         (parts[0], parts[1])
     } else {
         ("GET", "/")
     };
-
     println!("{} {}", method, path);
+
     let body = "Hello from Rust!\n".to_string();
 
     let response = format!(
@@ -44,5 +39,5 @@ async fn socket_task(mut socket: TcpStream) {
         body
     );
 
-    let _ = socket.write_all(response.as_bytes()).await;
+    // let _ = socket.write_all(response.as_bytes()).await;
 }
